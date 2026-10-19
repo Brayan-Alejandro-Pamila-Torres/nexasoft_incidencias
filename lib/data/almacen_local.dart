@@ -11,7 +11,9 @@ class AlmacenLocal {
     final guardadas = await prefs.getString(clave);
     final texto = guardadas ??
         await rootBundle.loadString('assets/data/incidencias.json');
+
     final lista = jsonDecode(texto) as List<dynamic>;
+
     return lista
         .map((item) => Incidencia.desdeJson(item as Map<String, dynamic>))
         .toList();
