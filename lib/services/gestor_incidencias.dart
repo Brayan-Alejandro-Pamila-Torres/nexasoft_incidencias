@@ -12,10 +12,21 @@ class GestorIncidencias {
         incidencias.where((x) => x.estado == 'Pendiente').length;
   }
 
+  
+  
   List<Incidencia> buscar(String texto) {
-    if (texto.trim().isEmpty) return incidencias;
-    return incidencias.where((x) => x.titulo.contains(texto)).toList();
-  }
+  final consulta = texto.trim().toLowerCase();
+
+  if (consulta.isEmpty) return incidencias;
+
+  return incidencias.where((x) {
+    return x.id.toLowerCase().contains(consulta) ||
+        x.titulo.toLowerCase().contains(consulta) ||
+        x.descripcion.toLowerCase().contains(consulta);
+  }).toList();
+}
+
+
 
   Incidencia? porId(String id) {
     for (var x in incidencias) {
