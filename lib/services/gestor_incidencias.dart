@@ -1,3 +1,4 @@
+
 import '../data/almacen_local.dart';
 import '../model/incidencia.dart';
 
@@ -12,21 +13,17 @@ class GestorIncidencias {
         incidencias.where((x) => x.estado == 'Pendiente').length;
   }
 
-  
-  
   List<Incidencia> buscar(String texto) {
-  final consulta = texto.trim().toLowerCase();
+    final consulta = texto.trim().toLowerCase();
 
-  if (consulta.isEmpty) return incidencias;
+    if (consulta.isEmpty) return incidencias;
 
-  return incidencias.where((x) {
-    return x.id.toLowerCase().contains(consulta) ||
-        x.titulo.toLowerCase().contains(consulta) ||
-        x.descripcion.toLowerCase().contains(consulta);
-  }).toList();
-}
-
-
+    return incidencias.where((x) {
+      return x.id.toLowerCase().contains(consulta) ||
+          x.titulo.toLowerCase().contains(consulta) ||
+          x.descripcion.toLowerCase().contains(consulta);
+    }).toList();
+  }
 
   Incidencia? porId(String id) {
     for (var x in incidencias) {
@@ -54,8 +51,32 @@ class GestorIncidencias {
     }
   }
 
-  Future<void> crear(String titulo, String descripcion, String cliente,
-      String categoria) async {
+  Future<void> cambiarPrioridad(String id, String prioridad) async {
+    if (!Incidencia.prioridadesValidas.contains(prioridad)) {
+      throw ArgumentError('Prioridad no válida: $prioridad');
+    }
+
+    for (final incidencia in incidencias) {
+      if (incidencia.id == id) {
+        incidencia.prioridad = prioridad;
+        await datos.guardar(incidencias);
+        break;
+      }
+    }
+  }
+
+  Future<void> crear(
+    String titulo,
+    String descripcion,
+    String cliente,
+    String categoria,
+    String prioridad,
+  ) async {
+    final prioridadValida =
+        Incidencia.prioridadesValidas.contains(prioridad)
+            ? prioridad
+            : 'Media';
+
     final nuevo = Incidencia(
       id: 'INC-${DateTime.now().microsecondsSinceEpoch}',
       titulo: titulo,
@@ -64,9 +85,12 @@ class GestorIncidencias {
       categoria: categoria,
       estado: 'Pendiente',
       fecha: DateTime.now().toIso8601String().split('T').first,
+      prioridad: prioridadValida,
     );
+
     incidencias.insert(0, nuevo);
     cantidadPendientes++;
+
     await datos.guardar(incidencias);
   }
 
