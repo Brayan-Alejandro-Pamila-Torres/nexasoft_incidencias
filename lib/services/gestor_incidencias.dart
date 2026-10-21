@@ -4,6 +4,7 @@ import '../model/incidencia.dart';
 
 class GestorIncidencias {
   final AlmacenLocal datos = AlmacenLocal();
+
   List<Incidencia> incidencias = [];
   int cantidadPendientes = 0;
 
@@ -13,34 +14,46 @@ class GestorIncidencias {
         incidencias.where((x) => x.estado == 'Pendiente').length;
   }
 
-  List<Incidencia> buscar(String texto) {
+  List<Incidencia> buscar(
+    String texto, {
+    String? estado,
+    String? prioridad,
+  }) {
     final consulta = texto.trim().toLowerCase();
 
-    if (consulta.isEmpty) return incidencias;
+    return incidencias.where((incidencia) {
+      final coincideTexto = consulta.isEmpty ||
+          incidencia.id.toLowerCase().contains(consulta) ||
+          incidencia.titulo.toLowerCase().contains(consulta) ||
+          incidencia.descripcion.toLowerCase().contains(consulta);
 
-    return incidencias.where((x) {
-      return x.id.toLowerCase().contains(consulta) ||
-          x.titulo.toLowerCase().contains(consulta) ||
-          x.descripcion.toLowerCase().contains(consulta);
+      final coincideEstado =
+          estado == null || incidencia.estado == estado;
+
+      final coincidePrioridad =
+          prioridad == null || incidencia.prioridad == prioridad;
+
+      return coincideTexto && coincideEstado && coincidePrioridad;
     }).toList();
   }
 
   Incidencia? porId(String id) {
-    for (var x in incidencias) {
-      if (x.id == id) return x;
+    for (final incidencia in incidencias) {
+      if (incidencia.id == id) return incidencia;
     }
     return null;
   }
 
   int contar(String estado) {
     if (estado == 'Pendiente') return cantidadPendientes;
+
     return incidencias.where((x) => x.estado == estado).length;
   }
 
   Future<void> cambiarEstado(String id, String estado) async {
-    for (var i = 0; i < incidencias.length; i++) {
-      if (incidencias[i].id == id) {
-        incidencias[i].estado = estado;
+    for (final incidencia in incidencias) {
+      if (incidencia.id == id) {
+        incidencia.estado = estado;
 
         cantidadPendientes =
             incidencias.where((x) => x.estado == 'Pendiente').length;

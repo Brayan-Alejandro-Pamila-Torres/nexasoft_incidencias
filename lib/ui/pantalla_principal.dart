@@ -18,6 +18,8 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
   bool cargando = true;
   String? error;
   String busqueda = '';
+  String? estadoSeleccionado;
+  String? prioridadSeleccionada;
 
   @override
   void initState() {
@@ -190,7 +192,11 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
       await g.reiniciarDemo();
 
       if (mounted) {
-        setState(() {});
+        setState(() {
+          busqueda = '';
+          estadoSeleccionado = null;
+          prioridadSeleccionada = null;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -203,9 +209,25 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
     }
   }
 
+  void limpiarFiltros() {
+    setState(() {
+      busqueda = '';
+      estadoSeleccionado = null;
+      prioridadSeleccionada = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final items = g.buscar(busqueda);
+    final items = g.buscar(
+      busqueda,
+      estado: estadoSeleccionado,
+      prioridad: prioridadSeleccionada,
+    );
+
+    final hayFiltros = busqueda.trim().isNotEmpty ||
+        estadoSeleccionado != null ||
+        prioridadSeleccionada != null;
 
     return Scaffold(
       appBar: AppBar(
@@ -283,44 +305,185 @@ class _PantallaPrincipalState extends State<PantallaPrincipal> {
                             ],
                           ),
                         ),
+
+                        // Buscador de texto
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 17,
                             vertical: 5,
                           ),
                           child: TextField(
-                            decoration: const InputDecoration(
+                            controller: TextEditingController
+                                .fromValue(
+                              TextEditingValue(
+                                text: busqueda,
+                                selection: TextSelection.collapsed(
+                                  offset: busqueda.length,
+                                ),
+                              ),
+                            ),
+                            decoration: InputDecoration(
                               labelText: 'Buscar incidencias',
                               hintText:
                                   'Ejemplo: WiFi, correo, pantalla',
-                              prefixIcon: Icon(Icons.search),
-                              border: OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.search),
+                              border: const OutlineInputBorder(),
+                              suffixIcon: busqueda.isNotEmpty
+                                  ? IconButton(
+                                      tooltip: 'Limpiar búsqueda',
+                                      onPressed: () {
+                                        setState(() => busqueda = '');
+                                      },
+                                      icon: const Icon(Icons.clear),
+                                    )
+                                  : null,
                             ),
                             onChanged: (texto) {
                               setState(() => busqueda = texto);
                             },
                           ),
                         ),
+
+                        // Filtros por estado y prioridad
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 17,
+                            vertical: 5,
+                          ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final ancho =
+                                  (constraints.maxWidth - 10) / 2;
+
+                              return Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  SizedBox(
+                                    width: ancho,
+                                    child:
+                                        DropdownButtonFormField<String?>(
+                                      initialValue: estadoSeleccionado,
+                                      isExpanded: true,
+                                      decoration:
+                                          const InputDecoration(
+                                        labelText: 'Estado',
+                                        border: OutlineInputBorder(),
+                                        contentPadding:
+                                            EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem<String?>(
+                                          value: null,
+                                          child: Text('Todos'),
+                                        ),
+                                        DropdownMenuItem<String?>(
+                                          value: 'Pendiente',
+                                          child: Text('Pendiente'),
+                                        ),
+                                        DropdownMenuItem<String?>(
+                                          value: 'En proceso',
+                                          child: Text('En proceso'),
+                                        ),
+                                        DropdownMenuItem<String?>(
+                                          value: 'Resuelta',
+                                          child: Text('Resuelta'),
+                                        ),
+                                      ],
+                                      onChanged: (valor) {
+                                        setState(() {
+                                          estadoSeleccionado = valor;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: ancho,
+                                    child:
+                                        DropdownButtonFormField<String?>(
+                                      initialValue:
+                                          prioridadSeleccionada,
+                                      isExpanded: true,
+                                      decoration:
+                                          const InputDecoration(
+                                        labelText: 'Prioridad',
+                                        border: OutlineInputBorder(),
+                                        contentPadding:
+                                            EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                      items: const [
+                                        DropdownMenuItem<String?>(
+                                          value: null,
+                                          child: Text('Todas'),
+                                        ),
+                                        DropdownMenuItem<String?>(
+                                          value: 'Baja',
+                                          child: Text('Baja'),
+                                        ),
+                                        DropdownMenuItem<String?>(
+                                          value: 'Media',
+                                          child: Text('Media'),
+                                        ),
+                                        DropdownMenuItem<String?>(
+                                          value: 'Alta',
+                                          child: Text('Alta'),
+                                        ),
+                                      ],
+                                      onChanged: (valor) {
+                                        setState(() {
+                                          prioridadSeleccionada =
+                                              valor;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+
                         Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
-                            vertical: 4,
+                            vertical: 5,
                           ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              '${items.length} registros',
-                              style: const TextStyle(
-                                color: Colors.black54,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  hayFiltros
+                                      ? '${items.length} resultados de '
+                                          '${g.incidencias.length} incidencias'
+                                      : '${items.length} registros',
+                                  style: const TextStyle(
+                                    color: Colors.black54,
+                                  ),
+                                ),
                               ),
-                            ),
+                              if (hayFiltros)
+                                TextButton.icon(
+                                  onPressed: limpiarFiltros,
+                                  icon: const Icon(Icons.filter_alt_off),
+                                  label: const Text('Limpiar filtros'),
+                                ),
+                            ],
                           ),
                         ),
+
                         Expanded(
                           child: items.isEmpty
                               ? const Center(
                                   child: Text(
-                                    'No se encontraron incidencias',
+                                    'No se encontraron incidencias '
+                                    'con esos filtros',
+                                    textAlign: TextAlign.center,
                                   ),
                                 )
                               : ListView.builder(
